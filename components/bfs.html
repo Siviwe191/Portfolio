@@ -1,0 +1,55 @@
+
+<div class ="canvas">
+    <div class="center-container "><canvas class="id-canvas" width ="1200" height="600" id="mycanvas" ref="canvas"></canvas></div>
+</div>
+<script type="text/javascript">
+class BreathFirst{
+    constructor(canvas){
+        this.canvas = canvas;
+        this.grid   = Array(80).fill(0).map(() => Array(30).fill("0"));
+        this.width  = 60;
+        this.height = 30;
+
+        this.colors = {
+        green :'green',
+        red :'red',
+        grey :'grey',
+        black: 'black',
+        blue : 'rgb(10, 114, 233)'
+        }
+        this.canvasInstatiate = document.getElementById(this.canvas);
+        this.context = this.canvasInstatiate.getContext('2d');
+    }
+
+    draw(){
+    let x = 0;
+    let y = 0;
+    const matrix = this.grid;
+    if(this.canvas){
+    
+        this.context.can_width  = parseInt(this.canvasInstatiate.width);
+        this.context.can_height = parseInt(this.canvasInstatiate.height);
+
+        this.canvasWidth  = this.context.can_width/this.width;
+        this.canvasHeight = this.context.can_height/this.height;
+      
+    for(let row = 0; row < matrix.length; row++){
+        for(let col = 0; col < matrix[row].length; col++){
+            y = col * this.canvasWidth;
+            x = row * this.canvasHeight;
+            
+            this.context.strokeStyle = this.colors.grey;
+            this.context.rect(x, y, this.canvasWidth, this.canvasHeight, 5);
+            this.context.stroke();               
+            }
+        }
+    }else{
+        console.log('Canvas could not be instatiated');
+    }
+}
+}
+
+let bfs = new BreathFirst('mycanvas');
+bfs.draw();
+
+</script>
