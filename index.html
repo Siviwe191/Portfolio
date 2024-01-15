@@ -55,7 +55,7 @@
         <div class="center-container ">
             <h5>Run Instructions</h5>
             <p id="pf_instruction">Click on the start/target button then click any position on the graph to choose your start/end point ,choose prefered run  speed(optional),maze(optional) and pathfinder.</p>
-            <p id="ml_instruction" style="display:none;">Click on the load model button then Enter the value and square feet then click on the predict button.</p>
+            <p id="ml_instruction" style="display:none;">Click on the load model button then Enter your values then click on the predict button.</p>
         </div>
         <div class="center-container-checkbox">
        
@@ -72,9 +72,13 @@
                 <option value="dfs">Depth First Search</option>
                 <option value="dijkstra">Dijkstra's Algorithm</option>
                 <option value="a-start">*A Algorithm (A Star)</option>
-                <option value="bidirectional">Bidirectional Search</option>
+                <!--<option value="bidirectional">Bidirectional Search</option>-->
             </select>
-
+           <select class="select" style="margin-left:200px;display:none;" id="machinelearning_models">
+                <option value="">Select Model</option>
+                <option value="heart_d_model">Heart Disease Model</option>
+                <option value="house_p_model">House Prediction Model</option>
+            </select>
             <select  class="select" style="margin-left:5px;" id="timetaken">
                 <option value=100>100 milli seconds</option>
                 <option value=1000>1000 mili seconds</option>
@@ -122,18 +126,21 @@
                 </div>
                 <div>
                      <!--   Prediction   -->
-                        <div class="flex-container">
+                       <div class="flex-container">
                             <div class="flex-child">
-                                <h5 class="center-container">Predict</h5>
-
-                                <p class="center-container">Square feet of living space: <input type="number" class="select-box" id="prediction-input-1" placeholder="2000"/></p>
-                                <p class="center-container">House price ($): <input type="number" class="select-box" id="prediction-input-2" placeholder="1000000"/></p>
+                               
+                                    <h2 class="center-container">Predict</h2>
+                                
+                                <div class="inline-items">
+                                    <p class="center-container"><input type="number" class="select-box" id="prediction-input-1" placeholder="0"/></p>
+                                </div>
+                                <div class="inline-items"> <input type="number" class="select-box" id="prediction-input-2" placeholder="0">
+                                    <button autocomplete="off" id="predict-button" class="btn btn-outline-success" disabled >Predict class</button>
+                                  </div>
                             </div>
+                           
                             <div class="flex-child">
-                                <button autocomplete="off" id="predict-button" class="btn btn-outline-success" style="margin-top: 35%;" disabled onclick="predict()">Predict class</button> 
-                            </div>
-                            <div class="flex-child">
-                            <p><strong id="prediction-output"></strong></p>
+                                <p><strong id="prediction-output"></strong></p>
                             </div>
                         </div>
                     </div>
@@ -157,7 +164,20 @@
         let pathFinders = document.getElementById('pathfinders');
         let timeTake = document.getElementById('timetaken');
         let canvas   = document.getElementById("canvas");
+        const modeltype = document.getElementById('machinelearning_models');
+        const prediction = document.getElementById('predict-button');
+        let mtypevalue = '';
 
+        $(modeltype).on('change',function(){
+            mtypevalue = this.value;
+            getmodel(this.value);
+           run(this.value);
+          
+        });
+        prediction.addEventListener("click", function(event) {
+            predict(mtypevalue);
+        });
+    
         const selected_value  = document.getElementsByName("target");
         const emptyboard = mazes.nomaze;
         let pH;
@@ -368,6 +388,7 @@
        $("#clear").hide();
        $("#ml_instruction").show();
         $("#pf_instruction").hide();
+       $("#machinelearning_models").show();
        if(!hasRun){
             machine_learning();
        hasRun = true;
@@ -384,6 +405,7 @@
         $("#clear").show();
         $("#ml_instruction").hide();
         $("#pf_instruction").show();
+       $("#machinelearning_models").hide();
     }); 
 
     </script>
