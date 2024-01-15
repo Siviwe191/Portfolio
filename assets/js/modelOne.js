@@ -1,6 +1,11 @@
 const surface = document.getElementById('demo');
 const surfaceb = document.getElementById('demo2');
-async function plotClasses (pointsArray, classKey, size = 400, equalizeClassSizes = false) {
+
+function getmodel(modeltype = ''){
+return modeltype
+}
+
+async function plotClasses (pointsArray, classKey, size = 400, equalizeClassSizes = false,mtype = '') {
  const allSeries = {};
  // Add each class as a series
  pointsArray.forEach(p => {
@@ -33,11 +38,24 @@ async function plotClasses (pointsArray, classKey, size = 400, equalizeClassSize
 
  
  const series = ["Square feet", "Price"];
-
-const data = { name: `Square feet vs House Price`,values: Object.values(allSeries), series: Object.keys(allSeries)}
+let tags;
+if(mtype == 'heart_d_model') {
+  tags = {
+    name: 'RestingBP vs Cholesterol',
+    xLab: 'Resting Blood Pressure',
+    yLab: 'Cholesterol'
+  }
+}else if(mtype == 'house_p_model' || mtype == ''){
+  tags = {
+    name: 'Square feet vs House Price',
+    xLab: 'Square feet',
+    yLab: 'Price'
+  }
+}
+const data = { name: tags.name,values: Object.values(allSeries), series: Object.keys(allSeries)}
 tfvis.render.scatterplot(surface, data,{
-   xLabel: "Square feet",
-   yLabel: "Price",
+   xLabel: tags.xLab,
+   yLabel: tags.yLab,
    height: size,
    width: size * 1.5,
 });
@@ -62,7 +80,7 @@ async function plot(pointsArray, featureName, predictedPointsArray = null) {
  )
 }
 
-async function plotPredictionHeatmap(name = "Predicted class", size = 400) {
+async function plotPredictionHeatmap(name = "Predicted class", size = 400,mtype = '') {
  const [ valuesPromise, xTicksPromise, yTicksPromise ] = tf.tidy(() => {
    const gridSize = 50;
    const predictionColumns = [];
@@ -93,15 +111,29 @@ async function plotPredictionHeatmap(name = "Predicted class", size = 400) {
  const values = await valuesPromise;
  const xTicks = await xTicksPromise;
  const yTicks = await yTicksPromise;
- const xTickLabels = xTicks.map(v => (v/1000).toFixed(1)+"k sqft");
- const yTickLabels = yTicks.map(v => "$" + (v/1000).toFixed(0) + "k");
+ let tags;
+  if(mtype == 'heart_d_model') {
+    tags = {
+      suffix: 'bp',
+      xLab: '',
+      yLab: ''
+    }
+  }else if(mtype == 'house_p_model' || mtype == ''){
+    tags = {
+      suffix: 'k sqft',
+      xLab: '$',
+      yLab: 'k'
+    }
+  }
+ const xTickLabels = xTicks.map(v => (v).toFixed(1));
+ const yTickLabels = yTicks.map(v => (v).toFixed(0));
  const data = {
    values,
    xTickLabels,
    yTickLabels,
  };
 
-   tfvis.render.heatmap(surfaceb, data,{ height: size });
+ tfvis.render.heatmap(surfaceb, data,{ height: size });
  tfvis.render.heatmap({
    name: `${name} (full domain)`,
    tab: "Predictions"
@@ -218,7 +250,7 @@ async function trainModel (model, trainingFeatureTensor, trainingLabelTensor) {
  });
 }
 
-async function predict () {
+async function predict (mtype = '') {
  const predictionInputOne = parseInt(document.getElementById("prediction-input-1").value);
  const predictionInputTwo = parseInt(document.getElementById("prediction-input-2").value);
  if (isNaN(predictionInputOne) || isNaN(predictionInputTwo)) {
@@ -228,18 +260,18 @@ async function predict () {
     text: 'Please enter a valid number',
   })
  }
- else if (predictionInputOne < 200) {
+ else if (predictionInputOne < 1) {
    Swal.fire({
     icon: 'warning',
     title: 'Alert',
-    text: 'Please enter a value above 200 sqft',
+    text: 'Please enter a value above 0',
   })
  }
- else if (predictionInputTwo < 75000) {
+ else if (predictionInputTwo < 1) {
    Swal.fire({
     icon: 'warning',
     title: 'Alert',
-    text: 'Please enter a value above $75,000',
+    text: 'Please enter a value above 0',
   })
  }
  else {
@@ -250,7 +282,17 @@ async function predict () {
      const outputTensor = denormalise(normalisedOutputTensor, normalisedLabel.min, normalisedLabel.max);
      const outputValue = outputTensor.dataSync()[0];
      const outputValuePercent = (outputValue*100).toFixed(1);
-     document.getElementById("prediction-output").innerHTML = `The likelihood of being a waterfront property is <br>`
+     let tags;
+     if(mtype == 'heart_d_model') {
+      tags = {
+        predmessage: 'The likelihood of heart disease is'
+      }
+    }else if(mtype == 'house_p_model' || mtype == ''){
+      tags = {
+        predmessage: 'The likelihood of being a waterfront property is'
+      }
+    }
+     document.getElementById("prediction-output").innerHTML = `${tags.predmessage}<br>`
        + `<span style="font-size: 2em">${outputValuePercent}%</span>`;
    });
  }
@@ -262,8 +304,17 @@ async function save () {
  document.getElementById("model-status").innerHTML = `Trained (saved ${saveResults.modelArtifactsInfo.dateSaved})`;
 }
 
-async function load () {
-  const storageKey = 'https://siviwesportfolio.co.za/model.json';
+async function load (mtype='') {
+ if(mtype == 'heart_d_model') {
+    tags = {
+      skey: 'https://siviwesportfolio.co.za/heartdisease-model.json'
+    }
+  }else if(mtype == 'house_p_model' || mtype == ''){
+    tags = {
+      skey: 'https://siviwesportfolio.co.za/model.json'
+    }
+  }
+  const storageKey = tags.skey;
   
   const models = await tf.io.listModels();
   const modelInfo = models[storageKey];
@@ -271,18 +322,18 @@ async function load () {
   if (storageKey) {
     model = await tf.loadLayersModel(storageKey);
 
-    await plotPredictionHeatmap();
+    await plotPredictionHeatmap('','',mtype);
     tfvis.show.modelSummary({ name: "Model summary" }, model);
     const layer = model.getLayer(undefined, 0);
     tfvis.show.layer({ name: "Layer 1" }, layer);
 
-    document.getElementById("model-status").innerHTML = `Trained (saved ${modelInfo.dateSaved})`;
     document.getElementById("predict-button").removeAttribute("disabled");
   }
   else {
     alert("Could not load: no saved model found");
   }
 }
+
 async function test () {
  const lossTensor = model.evaluate(testingFeatureTensor, testingLabelTensor);
  const loss = (await lossTensor.dataSync())[0];
@@ -336,22 +387,37 @@ async function toggleVisor () {
 let points;
 let normalisedFeature, normalisedLabel;
 let trainingFeatureTensor, testingFeatureTensor, trainingLabelTensor, testingLabelTensor;
-async function run () {
+let modeltype = getmodel();
+async function run (mtype= '') {
  // Import from CSV
- const houseSalesDataset = tf.data.csv("./kc_house_data.csv");
-
+ let tags;
+ if(mtype == 'heart_d_model') {
+  tags = {
+    csvfile: './heart.csv'
+ 
+  }
+}else if(mtype == 'house_p_model' || mtype == ''){
+  tags = {
+    csvfile: './kc_house_data.csv'
+ 
+  }
+}
+ const houseSalesDataset = tf.data.csv(tags.csvfile);
+console.log(houseSalesDataset)
  // Extract x and y values to plot
  const pointsDataset = houseSalesDataset.map(record => ({
-   x: record.sqft_living,
-   y: record.price,
-   class: record.waterfront,
+   x: (mtype == 'house_p_model' || mtype == '') ? record.sqft_living : record.RestingBP,
+   y: (mtype == 'house_p_model' || mtype == '') ? record.price : record.Cholesterol,
+   class: (mtype == 'house_p_model' || mtype == '') ? record.waterfront : record.HeartDisease,
  }));
  points = await pointsDataset.toArray();
  if(points.length % 2 !== 0) {
    points.pop();
  }console.log(points);
  tf.util.shuffle(points);
- plotClasses(points, "Waterfront");
+let classes;
+ (mtype == 'house_p_model' || mtype == '') ? classes = 'Waterfront':  classes = 'Heart Disease';
+ plotClasses(points, classes,400,false,mtype);
 
  // Extract Features (inputs)
  const featureValues = points.map(p => [p.x, p.y]);
@@ -381,4 +447,4 @@ const modelSummary = model.summary();
 $("#demo2").html(modelSummary);
 
 }
-run();
+run(modeltype);
