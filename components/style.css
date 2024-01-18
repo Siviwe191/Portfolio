@@ -32,6 +32,8 @@ hr.dfs{
     .select{
         padding:6px;
         border-radius:5px;
+        display: inline-block;
+        margin-left:5px;
     }
     .center-container {
     display: grid;
